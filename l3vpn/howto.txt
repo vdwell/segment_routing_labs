@@ -1,0 +1,8 @@
+sudo containerlab deploy -t clab.yml
+
+docker exec -it clab-srv6_lab1-xrd01 /pkg/bin/xr_cli.sh
+ssh cisco@172.20.1.101
+
+docker exec -it clab-srv6_lab1-ce12 vtysh
+
+sudo containerlab destroy -t my-clab-1.yml

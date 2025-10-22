@@ -1,0 +1,108 @@
+#   The 4-node-quickstart.yml launches a containerlab XRd topology where the XRd instances are connected
+#   via point-to-point links: https://containerlab.dev/manual/network/#point-to-point-links
+#
+#   Topology
+#
+#                         fc00:0:1::                          fc00:0:3::                                fc00:0:5::
+#
+#   +----------+         +----------+                        +----------+                              +----------+            +----------+
+#   |          |         |          | 1                    1 |          | 2                       1    |          |            |          |
+#   |  ce1     +---------- xrd01    +------------------------+  xrd03   +------------------------------+ xrd05    -------------+  ce2     |
+#   |  frr     |         |          |     2001:13::          |          |         2001:35::            |          |            |  frr     |
+#   +----------+         +-----+----+                        +-----+----+                              +----+-----+            +----------+
+#                              | 2                                 | 0                                      | 2
+#10.1.1/0/24    192.168.1.0/24 |                                   |                                        |      192.168.1.0/24   10.1.2.0/24
+#                              |                                   |                                        |
+#                              |                                   |                                        |
+#                              | 2001:12::                         |                                        |
+#                              |                                   |                                        |
+#                              |                                   |                                        |
+#                              |                                   |                                        |
+#                              | 2                                 | 0                                      |
+#                         +----+-----+                       +-----+-----+                                  |
+#                         |          | 1                  1  |           | 2                                |
+#                         | xrd02    +-----------------------+  xrd04    +----------------------------------+
+#                         |          |     2001:24::         |           |          2001:45::      metric = 100
+#                         +----------+                       +-----------+
+#
+#                          fc00:0:2::                         fc00:0:4::
+#
+
+name: srv6_lab1
+
+mgmt:
+  network: mgt_net
+  ipv4-subnet: 172.20.1.0/24
+  ipv6-subnet: 2001:db8:20:1::/64
+
+topology:
+  nodes:
+    xrd01:
+      kind: cisco_xrd
+      image: tdesh10/xrd-control-plane:7.8.1
+      mgmt-ipv4: 172.20.1.101
+      mgmt-ipv6: 2001:db8:20:1::101
+      startup-config: config/xrd01.cfg
+
+    xrd02:
+      kind: cisco_xrd
+      image: tdesh10/xrd-control-plane:7.8.1
+      mgmt-ipv4: 172.20.1.102
+      mgmt-ipv6: 2001:db8:20:1::102
+      startup-config: config/xrd02.cfg
+
+    xrd03:
+      kind: cisco_xrd
+      image: tdesh10/xrd-control-plane:7.8.1
+      mgmt-ipv4: 172.20.1.103
+      mgmt-ipv6: 2001:db8:20:1::103
+      startup-config: config/xrd03.cfg
+
+    xrd04:
+      kind: cisco_xrd
+      image: tdesh10/xrd-control-plane:7.8.1
+      mgmt-ipv4: 172.20.1.104
+      mgmt-ipv6: 2001:db8:20:1::104
+      startup-config: config/xrd04.cfg
+
+    xrd05:
+      kind: cisco_xrd
+      image: tdesh10/xrd-control-plane:7.8.1
+      mgmt-ipv4: 172.20.1.105
+      mgmt-ipv6: 2001:db8:20:1::105
+      startup-config: config/xrd05.cfg
+
+    ce11:
+      kind: linux
+      image: quay.io/frrouting/frr:10.4.1
+      mgmt-ipv4: 172.20.1.11
+      binds:
+        - config/daemons:/etc/frr/daemons
+        - config/ce11-frr.conf:/etc/frr/frr.conf
+
+    ce21:
+      kind: linux
+      image: quay.io/frrouting/frr:10.4.1
+      mgmt-ipv4: 172.20.1.21
+      binds:
+        - config/daemons:/etc/frr/daemons
+        - config/ce21-frr.conf:/etc/frr/frr.conf
+
+    # xrd01-host:
+    #   kind: bridge
+
+    # xrd02-host:
+    #   kind: bridge
+
+  links:
+    - endpoints: ["xrd01:Gi0-0-0-1", "xrd03:Gi0-0-0-1"]
+    - endpoints: ["xrd01:Gi0-0-0-2", "xrd02:Gi0-0-0-2"]
+    - endpoints: ["xrd01:Gi0-0-0-3", "ce11:eth1"]
+
+    - endpoints: ["xrd04:Gi0-0-0-0", "xrd03:Gi0-0-0-0"]
+    - endpoints: ["xrd04:Gi0-0-0-1", "xrd02:Gi0-0-0-1"]
+    - endpoints: ["xrd04:Gi0-0-0-2", "xrd05:Gi0-0-0-2"]
+    #- endpoints: ["xrd02:Gi0-0-0-2", "xrd02-host:xrd02-Gi0-0-0-2"]
+
+    - endpoints: ["xrd05:Gi0-0-0-1", "xrd03:Gi0-0-0-2"]
+    - endpoints: ["xrd05:Gi0-0-0-3", "ce21:eth1"]
